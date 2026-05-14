@@ -79,11 +79,16 @@ HOST=0.0.0.0 PORT=9000 python cli.py dashboard
 
 # Scan a custom projects directory
 python cli.py scan --projects-dir /path/to/transcripts
+
+# Scan multiple directories (flag is repeatable, accepts glob patterns)
+python cli.py scan \
+  --projects-dir ~/.claude/projects \
+  --projects-dir '/opt/nanoclaw/data/sessions/*/.claude/projects'
 ```
 
-The scanner is incremental — it tracks each file's path and modification time, so re-running `scan` is fast and only processes new or changed files.
+The scanner is incremental, it tracks each file's path and modification time, so re-running `scan` is fast and only processes new or changed files.
 
-By default, the scanner checks both `~/.claude/projects/` and the Xcode Claude integration directory (`~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/projects/`), skipping any that don't exist. Use `--projects-dir` to scan a custom location instead.
+By default, the scanner checks both `~/.claude/projects/` and the Xcode Claude integration directory (`~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/projects/`), skipping any that don't exist. Use `--projects-dir` to scan custom locations instead. The flag can be repeated and each value may be a glob pattern (useful for Claude Agent SDK deployments that store transcripts under per-instance subdirectories).
 
 ---
 

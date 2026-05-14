@@ -518,9 +518,13 @@ def scan(projects_dir=None, projects_dirs=None, db_path=DB_PATH, verbose=True):
 
 if __name__ == "__main__":
     import sys
-    projects_dir = None
-    for i, arg in enumerate(sys.argv[1:]):
-        if arg == "--projects-dir" and i + 1 < len(sys.argv[1:]):
-            projects_dir = Path(sys.argv[i + 2])
-            break
-    scan(projects_dir=projects_dir)
+    args = sys.argv[1:]
+    raw_values = [args[i + 1] for i, arg in enumerate(args)
+                  if arg == "--projects-dir" and i + 1 < len(args)]
+    projects_dirs = None
+    if raw_values:
+        projects_dirs = []
+        for v in raw_values:
+            matches = glob.glob(v)
+            projects_dirs.extend(matches if matches else [v])
+    scan(projects_dirs=projects_dirs)

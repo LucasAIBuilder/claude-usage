@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-05-14
+
+- `--projects-dir` is now repeatable and accepts glob patterns, useful for scanning multiple Claude Agent SDK deployments (e.g. `--projects-dir '/opt/myapp/sessions/*/.claude/projects'`)
+
 ## 2026-04-09
 
 - Fix token counts inflated ~2x by deduplicating streaming events that share the same message ID

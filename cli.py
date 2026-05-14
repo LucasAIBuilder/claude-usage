@@ -79,9 +79,9 @@ def require_db():
 
 # ── Commands ──────────────────────────────────────────────────────────────────
 
-def cmd_scan(projects_dir=None):
+def cmd_scan(projects_dirs=None):
     from scanner import scan
-    scan(projects_dir=Path(projects_dir) if projects_dir else None)
+    scan(projects_dirs=projects_dirs)
 
 
 def cmd_today():
@@ -357,13 +357,13 @@ def cmd_stats():
     conn.close()
 
 
-def cmd_dashboard(projects_dir=None, host=None, port=None):
+def cmd_dashboard(projects_dirs=None, host=None, port=None):
     import webbrowser
     import threading
     import time
 
     print("Running scan first...")
-    cmd_scan(projects_dir=projects_dir)
+    cmd_scan(projects_dirs=projects_dirs)
 
     print("\nStarting dashboard server...")
     from dashboard import serve
@@ -386,12 +386,15 @@ USAGE = """
 Claude Code Usage Dashboard
 
 Usage:
-  python cli.py scan [--projects-dir PATH]   Scan JSONL files and update database
-  python cli.py today                        Show today's usage summary
-  python cli.py week                         Show last 7 days (per-day + by-model)
-  python cli.py stats                        Show all-time statistics
-  python cli.py dashboard [--projects-dir PATH] [--host HOST] [--port PORT]
+  python cli.py scan [--projects-dir PATH ...]   Scan JSONL files and update database
+  python cli.py today                            Show today's usage summary
+  python cli.py week                             Show last 7 days (per-day + by-model)
+  python cli.py stats                            Show all-time statistics
+  python cli.py dashboard [--projects-dir PATH ...] [--host HOST] [--port PORT]
                                                  Scan + start dashboard
+
+--projects-dir may be repeated and accepts glob patterns
+(e.g. /opt/myapp/sessions/*/.claude/projects).
 """
 
 COMMANDS = {
@@ -409,6 +412,26 @@ def parse_named_arg(args, flag):
             return args[i + 1]
     return None
 
+
+def parse_projects_dirs(args):
+    """Extract all --projects-dir values, expanding globs. Returns list or None."""
+    import glob as _glob
+    values = []
+    for i, arg in enumerate(args):
+        if arg == "--projects-dir" and i + 1 < len(args):
+            values.append(args[i + 1])
+    if not values:
+        return None
+    expanded = []
+    for v in values:
+        matches = _glob.glob(v)
+        if matches:
+            expanded.extend(matches)
+        else:
+            # Pass non-matching paths through; scanner skips them if they don't exist.
+            expanded.append(v)
+    return expanded
+
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
         print(USAGE)
@@ -416,15 +439,15 @@ if __name__ == "__main__":
 
     command = sys.argv[1]
     rest = sys.argv[2:]
-    projects_dir = parse_named_arg(rest, "--projects-dir")
+    projects_dirs = parse_projects_dirs(rest)
 
     if command == "dashboard":
         cmd_dashboard(
-            projects_dir=projects_dir,
+            projects_dirs=projects_dirs,
             host=parse_named_arg(rest, "--host"),
             port=parse_named_arg(rest, "--port"),
         )
-    elif command == "scan" and projects_dir:
-        cmd_scan(projects_dir=projects_dir)
+    elif command == "scan" and projects_dirs:
+        cmd_scan(projects_dirs=projects_dirs)
     else:
         COMMANDS[command]()
