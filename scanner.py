@@ -92,7 +92,16 @@ def init_db(conn):
 
 
 def project_name_from_cwd(cwd):
-    """Derive a friendly project name from cwd path."""
+    """Derive a friendly project name from cwd path.
+
+    TODO (Agent SDK): for deployments that bind-mount per-instance directories
+    to a fixed container cwd (e.g. nanoclaw mounts each Discord group's volume
+    onto /workspace/group), every instance collapses to the same label here.
+    When the source path matches `*/data/sessions/<group>/.claude/...`, prefer
+    `<group>` as the label so per-instance rows are distinguishable. The
+    instance name isn't in the JSONL record, so this needs to be derived from
+    the file path at scan time, not from the cwd field.
+    """
     if not cwd:
         return "unknown"
     # Normalize to forward slashes, take last 2 components

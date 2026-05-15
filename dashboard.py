@@ -742,7 +742,7 @@ function applyFilter() {
 
   // Hourly aggregation (filtered by model + range, then bucketed by UTC hour)
   const hourlySrc = (rawData.hourly_by_model || []).filter(r =>
-    selectedModels.has(r.model) && (!cutoff || r.day >= cutoff)
+    selectedModels.has(r.model) && (!start || r.day >= start) && (!end || r.day <= end)
   );
   const hourlyAgg = aggregateHourly(hourlySrc, hourlyTZ);
 
@@ -1264,16 +1264,20 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/rescan":
             # Full rebuild: delete DB and rescan from scratch.
-            # Pass DB_PATH / DEFAULT_PROJECTS_DIRS explicitly so tests that
-            # patch the module globals are honored (scan's defaults are
-            # frozen at def time and would otherwise target the real paths).
+            # Pass DB_PATH / projects_dirs explicitly so tests that patch the
+            # module globals are honored (scan's defaults are frozen at def
+            # time and would otherwise target the real paths). Honors any
+            # --projects-dir flags passed to `cli.py dashboard` via
+            # self.server.projects_dirs.
             import scanner
             db_path = DB_PATH
             if db_path.exists():
                 db_path.unlink()
+            projects_dirs = getattr(self.server, "projects_dirs", None) \
+                or scanner.DEFAULT_PROJECTS_DIRS
             result = scanner.scan(
                 db_path=db_path,
-                projects_dirs=scanner.DEFAULT_PROJECTS_DIRS,
+                projects_dirs=projects_dirs,
                 verbose=False,
             )
             body = json.dumps(result).encode("utf-8")
@@ -1287,10 +1291,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 
-def serve(host=None, port=None):
+def serve(host=None, port=None, projects_dirs=None):
     host = host or os.environ.get("HOST", "localhost")
     port = port or int(os.environ.get("PORT", "8080"))
     server = HTTPServer((host, port), DashboardHandler)
+    server.projects_dirs = projects_dirs
     print(f"Dashboard running at http://{host}:{port}")
     print("Press Ctrl+C to stop.")
     try:

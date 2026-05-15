@@ -377,7 +377,7 @@ def cmd_dashboard(projects_dirs=None, host=None, port=None):
 
     t = threading.Thread(target=open_browser, daemon=True)
     t.start()
-    serve(host=host, port=port)
+    serve(host=host, port=port, projects_dirs=projects_dirs)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
